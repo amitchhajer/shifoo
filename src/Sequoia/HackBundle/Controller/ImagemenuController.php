@@ -14,13 +14,18 @@ class ImagemenuController extends Controller
 
     public function getImagemenuAction()
     {
-            $nUrl      = 'https://api.nutritionix.com/v1_1/search/';
             $nAppId    = '07153193';
             $nAppKey   = '6219c8eaf48616c9ebaf0e031727e5fa';
+
             $buzz      = $this->get('buzz');
             $request   = $this->getRequest();
-            $image     = $request->get('image');
-            $tesseract = new TesseractOCR($image);
+            $imageUrl  = $request->get('image_url');
+
+            $imageContents = file_get_contents($imageUrl);
+            $path = '/tmp/'.time().'.jpg';
+            file_put_contents($path, $imageContents);
+
+            $tesseract = new TesseractOCR($path);
             $tesseract->setTempDir('/tmp');
             //$tesseract->setWhitelist(range('A','Z'), range('a','z'));
             $data = strtolower($tesseract->recognize());
@@ -58,10 +63,13 @@ class ImagemenuController extends Controller
 
                         $combinedWord = urlencode($combinedWord);
                         $ch = curl_init();
-                        curl_setopt($ch,CURLOPT_URL,"https://api.nutritionix.com/v1_1/search/$combinedWord?results=0:1&fields=item_name,nf_ingredient_statement,nf_calories,nf_total_fat,nf_serving_weight_grams&appId=07153193&appKey=6219c8eaf48616c9ebaf0e031727e5fa");
+                        $url = "https://api.nutritionix.com/v1_1/search/$combinedWord?results=0:1&fields=item_name,nf_ingredient_statement,nf_calories,nf_total_fat,nf_serving_weight_grams&appId=$nAppId&appKey=$nAppKey";
+
+                        curl_setopt($ch,CURLOPT_URL, $url);
                         curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
 
                         $output = curl_exec($ch);
+                        $output = null;
 
                         if ($output) {
                             $result = json_decode($output,true);
